@@ -1,19 +1,25 @@
 
 import React, { useState } from 'react';
 // Consolidate ShoppingBag into the main lucide-react import list
-import { Heart, ChevronRight, ChevronLeft, Search, ShoppingBag } from 'lucide-react';
-import { Product } from '../types';
+import { Heart, ChevronRight, ChevronLeft, Search, ShoppingBag, Star } from 'lucide-react';
+import { Product, Review } from '../types';
 
 interface ProductCardProps {
   product: Product;
   onAddToCart: (p: Product) => void;
   onViewDetails: (p: Product) => void;
   lang: 'ar' | 'en';
+  reviews: Review[];
+  isReviewSystemActive: boolean;
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onViewDetails, lang }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onViewDetails, lang, reviews, isReviewSystemActive }) => {
   const [currentImgIdx, setCurrentImgIdx] = useState(0);
   const allImages = [product.image, ...(product.images || [])];
+
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
   
   const nextImg = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -88,6 +94,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, onViewD
         <h4 className="text-xl font-serif font-bold text-neutral-900 mb-2">
           {lang === 'ar' ? product.name : product.nameEn}
         </h4>
+        
+        {isReviewSystemActive && avgRating && (
+          <div className="flex items-center justify-center gap-1 mb-2 text-[#D4AF37]">
+            <Star size={14} fill="currentColor" />
+            <span className="text-sm font-bold">{avgRating}</span>
+            <span className="text-xs text-neutral-400">({reviews.length})</span>
+          </div>
+        )}
+
         <p className="text-neutral-500 text-sm mb-4 line-clamp-2">
           {lang === 'ar' ? product.description : product.descriptionEn}
         </p>

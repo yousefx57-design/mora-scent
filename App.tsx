@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
-import { Product, CartItem, Order, User, Category } from './types';
-import { INITIAL_CATEGORIES, INITIAL_PRODUCTS } from './constants';
+import { Product, CartItem, Order, User, Category, Review, Customer, StoreSettings, AdminUser, ActivityLog, Coupon, ShippingCompany, ShippingZone } from './types';
+import { INITIAL_CATEGORIES, INITIAL_PRODUCTS, EGYPT_CITIES } from './constants';
 import ChatWidget from './components/ChatWidget';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -28,6 +28,40 @@ const App: React.FC = () => {
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isReviewSystemActive, setIsReviewSystemActive] = useState(true);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>({
+    name: 'Mora scent',
+    logo: 'M',
+    email: 'info@morascent.com',
+    whatsapp: '01550294614',
+    currency: 'ج.م',
+    defaultLanguage: 'ar',
+    taxPercentage: 14,
+    policy: 'سياسة المتجر: التوصيل خلال 48 ساعة، المرتجعات خلال 14 يوم من الاستلام.',
+    aiDevelopmentEnabled: true
+  });
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([
+    { id: '1', name: 'Super Admin', email: 'admin@morascent.com', role: 'super_admin', createdAt: '2024-01-01' }
+  ]);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [coupons, setCoupons] = useState<Coupon[]>([
+    { id: '1', code: 'MORA10', discountType: 'percentage', discountValue: 10, minOrderValue: 500, expiryDate: '2025-12-31', usageLimit: 100, usageCount: 0, isActive: true }
+  ]);
+  const [shippingCompanies, setShippingCompanies] = useState<ShippingCompany[]>([
+    { id: '1', name: 'Aramex', contact: '02-333-1234', isActive: true },
+    { id: '2', name: 'Bosta', contact: '02-444-5678', isActive: true }
+  ]);
+  const [shippingZones, setShippingZones] = useState<ShippingZone[]>(
+    EGYPT_CITIES.map((city, idx) => ({
+      id: idx.toString(),
+      city,
+      rate: city === 'القاهرة' || city === 'الجيزة' ? 50 : 70,
+      deliveryTime: '2-3 أيام',
+      isActive: true
+    }))
+  );
 
   useEffect(() => {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -70,6 +104,15 @@ const App: React.FC = () => {
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  const handleAddReview = (review: Omit<Review, 'id' | 'date'>) => {
+    const newReview: Review = {
+      ...review,
+      id: Date.now(),
+      date: new Date().toLocaleDateString(lang === 'ar' ? 'ar-EG' : 'en-US')
+    };
+    setReviews(prev => [...prev, newReview]);
+  };
+
   if (view === 'admin') {
     return <AdminDashboard 
       orders={orders} 
@@ -78,8 +121,24 @@ const App: React.FC = () => {
       setProducts={setProducts} 
       categories={categories}
       setCategories={setCategories}
+      customers={customers}
+      setCustomers={setCustomers}
       onClose={() => setView('store')}
       lang={lang}
+      isReviewSystemActive={isReviewSystemActive}
+      setIsReviewSystemActive={setIsReviewSystemActive}
+      storeSettings={storeSettings}
+      setStoreSettings={setStoreSettings}
+      adminUsers={adminUsers}
+      setAdminUsers={setAdminUsers}
+      activityLogs={activityLogs}
+      setActivityLogs={setActivityLogs}
+      coupons={coupons}
+      setCoupons={setCoupons}
+      shippingCompanies={shippingCompanies}
+      setShippingCompanies={setShippingCompanies}
+      shippingZones={shippingZones}
+      setShippingZones={setShippingZones}
     />;
   }
 
@@ -99,6 +158,7 @@ const App: React.FC = () => {
         user={user}
         onLogin={handleLogin}
         onLogout={handleLogout}
+        storeSettings={storeSettings}
       />
 
       <CartDrawer 
@@ -131,9 +191,40 @@ const App: React.FC = () => {
           cart={cart}
           onOrderSubmit={(newOrder) => {
             setOrders(prev => [newOrder, ...prev]);
+            
+            // Update coupon usage if applied
+            if (newOrder.couponCode) {
+              setCoupons(prev => prev.map(c => c.code === newOrder.couponCode ? { ...c, usageCount: c.usageCount + 1 } : c));
+            }
+
+            // Update or create customer
+            setCustomers(prev => {
+              const existing = prev.find(c => c.phone === newOrder.customer.phone);
+              if (existing) {
+                return prev.map(c => c.phone === newOrder.customer.phone ? {
+                  ...c,
+                  orderCount: c.orderCount + 1,
+                  totalSpent: c.totalSpent + newOrder.total
+                } : c);
+              }
+              return [...prev, {
+                id: `CST-${Date.now()}`,
+                name: newOrder.customer.name,
+                email: newOrder.customer.email,
+                phone: newOrder.customer.phone,
+                orderCount: 1,
+                totalSpent: newOrder.total,
+                isBlocked: false,
+                notes: ''
+              }];
+            });
+
             setCart([]);
             setIsCheckoutOpen(false);
           }}
+          storeSettings={storeSettings}
+          coupons={coupons}
+          shippingZones={shippingZones}
         />
       )}
 
@@ -143,6 +234,10 @@ const App: React.FC = () => {
           lang={lang}
           onClose={() => setSelectedProduct(null)}
           onAddToCart={(p) => { addToCart(p); setSelectedProduct(null); }}
+          reviews={reviews.filter(r => r.productId === selectedProduct.id)}
+          onAddReview={handleAddReview}
+          user={user}
+          isReviewSystemActive={isReviewSystemActive}
         />
       )}
 
@@ -184,14 +279,16 @@ const App: React.FC = () => {
                 lang={lang}
                 onAddToCart={addToCart} 
                 onViewDetails={(p) => setSelectedProduct(p)}
+                reviews={reviews.filter(r => r.productId === product.id)}
+                isReviewSystemActive={isReviewSystemActive}
               />
             ))}
           </div>
         </div>
       </main>
 
-      <Footer lang={lang} onAdminClick={() => setView('admin')} />
-      <ChatWidget lang={lang} products={products} />
+      <Footer lang={lang} onAdminClick={() => setView('admin')} storeSettings={storeSettings} />
+      <ChatWidget lang={lang} products={products} storeSettings={storeSettings} />
     </div>
   );
 };

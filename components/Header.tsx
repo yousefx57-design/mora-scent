@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Search, ShoppingBag, Languages, LogIn, User as UserIcon, X, LogOut } from 'lucide-react';
-import { Product, User } from '../types';
+import { Product, User, StoreSettings } from '../types';
 
 interface HeaderProps {
   lang: 'ar' | 'en';
@@ -17,11 +17,12 @@ interface HeaderProps {
   user: User | null;
   onLogin: (userData: User) => void;
   onLogout: () => void;
+  storeSettings: StoreSettings;
 }
 
 const Header: React.FC<HeaderProps> = ({ 
   lang, setLang, cartCount, isSearchOpen, setIsSearchOpen, 
-  onOpenCart, onOpenLogin, user, onLogout
+  onOpenCart, onOpenLogin, user, onLogout, storeSettings
 }) => {
   return (
     <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b">
@@ -61,9 +62,18 @@ const Header: React.FC<HeaderProps> = ({
           </div>
 
           <div className="flex-shrink-0 cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
-            <h1 className="text-3xl font-serif font-bold text-[#D4AF37] tracking-tighter">
-              Mora scent
-            </h1>
+            <div className="flex items-center gap-2">
+              {storeSettings.logo.startsWith('http') ? (
+                <img src={storeSettings.logo} alt={storeSettings.name} className="h-10 w-auto" />
+              ) : (
+                <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center text-black font-bold text-xl">
+                  {storeSettings.logo}
+                </div>
+              )}
+              <h1 className="text-3xl font-serif font-bold text-[#D4AF37] tracking-tighter hidden sm:block">
+                {storeSettings.name}
+              </h1>
+            </div>
           </div>
 
           <div className="flex items-center space-x-4 space-x-reverse">

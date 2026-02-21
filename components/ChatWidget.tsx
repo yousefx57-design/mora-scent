@@ -2,21 +2,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MessageCircle, X, Send } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
-import { Product } from '../types';
+import { Product, StoreSettings } from '../types';
 
 interface ChatWidgetProps {
   products: Product[];
   lang: 'ar' | 'en';
+  storeSettings: StoreSettings;
 }
 
-const ChatWidget: React.FC<ChatWidgetProps> = ({ products, lang }) => {
+const ChatWidget: React.FC<ChatWidgetProps> = ({ products, lang, storeSettings }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{role: 'user' | 'model', text: string}[]>([
     { 
       role: 'model', 
       text: lang === 'ar' 
-        ? 'أهلاً بك في Mora scent! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم في اختيار عطر أحلامك؟' 
-        : 'Welcome to Mora scent! I am your smart assistant. How can I help you choose your dream scent today?'
+        ? `أهلاً بك في ${storeSettings.name}! أنا مساعدك الذكي. كيف يمكنني مساعدتك اليوم في اختيار عطر أحلامك؟` 
+        : `Welcome to ${storeSettings.name}! I am your smart assistant. How can I help you choose your dream scent today?`
     }
   ]);
   const [input, setInput] = useState("");
@@ -39,10 +40,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ products, lang }) => {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const productsContext = products.map(p => `- ${p.name} / ${p.nameEn} (${p.category}): ${p.price} EGP. Description: ${p.descriptionEn}`).join('\n');
+      const productsContext = products.map(p => `- ${p.name} / ${p.nameEn} (${p.category}): ${p.price} ${storeSettings.currency}. Description: ${p.descriptionEn}`).join('\n');
       
       const systemInstruction = lang === 'ar' ? `
-        أنت مساعد ذكي لمتجر "Mora scent" الفاخر للعطور. 
+        أنت مساعد ذكي لمتجر "${storeSettings.name}" الفاخر للعطور. 
         أسلوبك: راقٍ، مؤدب، خبير في العطور، ومساعد جداً.
         استخدم اللغة العربية الفصحى البسيطة أو البيضاء المناسبة لمصر.
         لديك قائمة المنتجات التالية المتوفرة في المتجر:
@@ -53,7 +54,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ products, lang }) => {
         2. ترشيح عطور بناءً على ذوق العميل.
         3. تشجيع العميل على إتمام الشراء بلطف وفخامة.
       ` : `
-        You are a smart assistant for the luxury "Mora scent" perfume store.
+        You are a smart assistant for the luxury "${storeSettings.name}" perfume store.
         Your style: sophisticated, polite, perfume expert, and very helpful.
         Available products:
         ${productsContext}
@@ -104,12 +105,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ products, lang }) => {
         <div className="fixed bottom-24 right-6 z-50 w-80 md:w-96 bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col border border-neutral-100 h-[500px] animate-fade-in-up">
           <div className="bg-[#1a1a1a] text-white p-5 flex justify-between items-center">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center font-serif text-black font-bold uppercase">
-                M
+              <div className="w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center font-serif text-black font-bold uppercase overflow-hidden">
+                {storeSettings.logo.startsWith('http') ? (
+                  <img src={storeSettings.logo} alt={storeSettings.name} className="w-full h-full object-cover" />
+                ) : storeSettings.logo}
               </div>
               <div>
                 <div className="font-serif font-bold text-lg leading-none">
-                  {lang === 'ar' ? 'مساعد Mora scent' : 'Mora scent Assistant'}
+                  {lang === 'ar' ? `مساعد ${storeSettings.name}` : `${storeSettings.name} Assistant`}
                 </div>
                 <div className="text-[10px] text-[#D4AF37] flex items-center gap-1 mt-1">
                   <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> 

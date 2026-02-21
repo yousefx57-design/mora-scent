@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { TrendingUp, ShoppingBag, Package, Plus, Trash2, ArrowLeft, Image as ImageIcon, Upload, X, ClipboardList, Clock, Truck, Edit3, Minus, Warehouse, Search as SearchIcon, AlertTriangle, Smartphone, CheckCircle2, Banknote, ListTree } from 'lucide-react';
-import { Order, Product, Category } from '../types';
+import { TrendingUp, ShoppingBag, Package, Plus, Trash2, ArrowLeft, Image as ImageIcon, Upload, X, ClipboardList, Clock, Truck, Edit3, Minus, Warehouse, Search as SearchIcon, AlertTriangle, Smartphone, CheckCircle2, Banknote, ListTree, Users, Ban, FileText, RotateCcw, CreditCard, Settings, Mail, MessageCircle, Globe, Percent, Shield, Cpu, Lock, ShieldAlert, History, Key, Download, Ticket, MapPin } from 'lucide-react';
+import { Order, Product, Category, Customer, StoreSettings, AdminUser, ActivityLog, Role, Coupon, ShippingCompany, ShippingZone } from '../types';
 
 interface AdminDashboardProps {
   orders: Order[];
@@ -10,13 +10,38 @@ interface AdminDashboardProps {
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   categories: Category[];
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  customers: Customer[];
+  setCustomers: React.Dispatch<React.SetStateAction<Customer[]>>;
   onClose: () => void;
   lang: 'ar' | 'en';
+  isReviewSystemActive: boolean;
+  setIsReviewSystemActive: React.Dispatch<React.SetStateAction<boolean>>;
+  storeSettings: StoreSettings;
+  setStoreSettings: React.Dispatch<React.SetStateAction<StoreSettings>>;
+  adminUsers: AdminUser[];
+  setAdminUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>;
+  activityLogs: ActivityLog[];
+  setActivityLogs: React.Dispatch<React.SetStateAction<ActivityLog[]>>;
+  coupons: Coupon[];
+  setCoupons: React.Dispatch<React.SetStateAction<Coupon[]>>;
+  shippingCompanies: ShippingCompany[];
+  setShippingCompanies: React.Dispatch<React.SetStateAction<ShippingCompany[]>>;
+  shippingZones: ShippingZone[];
+  setShippingZones: React.Dispatch<React.SetStateAction<ShippingZone[]>>;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, setOrders, products, setProducts, categories, setCategories, onClose, lang }) => {
-  const [activeTab, setActiveTab] = useState<'stats' | 'orders' | 'products' | 'stock' | 'categories'>('stats');
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ 
+  orders, setOrders, products, setProducts, categories, setCategories, customers, setCustomers, onClose, lang,
+  isReviewSystemActive, setIsReviewSystemActive, storeSettings, setStoreSettings,
+  adminUsers, setAdminUsers, activityLogs, setActivityLogs, coupons, setCoupons,
+  shippingCompanies, setShippingCompanies, shippingZones, setShippingZones
+}) => {
+  const [activeTab, setActiveTab] = useState<'stats' | 'orders' | 'products' | 'stock' | 'categories' | 'settings' | 'customers' | 'security' | 'coupons' | 'shipping'>('stats');
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [newCoupon, setNewCoupon] = useState<Partial<Coupon>>({
+    code: '', discountType: 'percentage', discountValue: 0, minOrderValue: 0, expiryDate: '', usageLimit: 100, isActive: true
+  });
   const [stockSearchQuery, setStockSearchQuery] = useState("");
   const [newCat, setNewCat] = useState({ ar: '', en: '' });
   const [newProduct, setNewProduct] = useState<Partial<Product>>({ 
@@ -89,7 +114,468 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, setOrders, prod
           <button onClick={() => setActiveTab('products')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'products' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><ShoppingBag size={18} /> {lang === 'ar' ? 'المنتجات' : 'Products'}</button>
           <button onClick={() => setActiveTab('stock')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'stock' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><Warehouse size={18} /> {lang === 'ar' ? 'المخزن' : 'Stock'}</button>
           <button onClick={() => setActiveTab('categories')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'categories' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><ListTree size={18} /> {lang === 'ar' ? 'الفئات' : 'Categories'}</button>
+          <button onClick={() => setActiveTab('customers')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'customers' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><Users size={18} /> {lang === 'ar' ? 'العملاء' : 'Customers'}</button>
+          <button onClick={() => setActiveTab('security')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'security' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><Lock size={18} /> {lang === 'ar' ? 'الأمان' : 'Security'}</button>
+          <button onClick={() => setActiveTab('shipping')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'shipping' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><Truck size={18} /> {lang === 'ar' ? 'الشحن' : 'Shipping'}</button>
+          <button onClick={() => setActiveTab('coupons')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'coupons' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><Ticket size={18} /> {lang === 'ar' ? 'الكوبونات' : 'Coupons'}</button>
+          <button onClick={() => setActiveTab('settings')} className={`px-8 py-3 rounded-xl font-bold transition-all ${activeTab === 'settings' ? 'bg-[#D4AF37] text-black' : 'bg-white text-neutral-500'}`}><Settings size={18} /> {lang === 'ar' ? 'الإعدادات' : 'Settings'}</button>
         </div>
+
+        {activeTab === 'shipping' && (
+          <div className="space-y-8 animate-fade-in-up">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Shipping Companies */}
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Truck className="text-[#D4AF37]" />
+                  {lang === 'ar' ? 'شركات الشحن' : 'Shipping Companies'}
+                </h3>
+                <div className="space-y-4">
+                  {shippingCompanies.map(company => (
+                    <div key={company.id} className="flex justify-between items-center p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <div>
+                        <div className="font-bold">{company.name}</div>
+                        <div className="text-xs text-neutral-400">{company.contact}</div>
+                      </div>
+                      <button 
+                        onClick={() => setShippingCompanies(prev => prev.map(c => c.id === company.id ? { ...c, isActive: !c.isActive } : c))}
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold ${company.isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}
+                      >
+                        {company.isActive ? (lang === 'ar' ? 'نشط' : 'Active') : (lang === 'ar' ? 'معطل' : 'Inactive')}
+                      </button>
+                    </div>
+                  ))}
+                  <button className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-neutral-400 font-bold text-sm hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all flex items-center justify-center gap-2">
+                    <Plus size={18} /> {lang === 'ar' ? 'إضافة شركة شحن' : 'Add Company'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Shipping Zones / Cities */}
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <MapPin className="text-[#D4AF37]" />
+                  {lang === 'ar' ? 'المناطق وأسعار الشحن' : 'Zones & Rates'}
+                </h3>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {shippingZones.map(zone => (
+                    <div key={zone.id} className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 flex justify-between items-center">
+                      <div>
+                        <div className="font-bold text-sm">{zone.city}</div>
+                        <div className="text-[10px] text-neutral-400">{zone.deliveryTime}</div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <input 
+                            type="number" 
+                            className="w-20 p-1 text-xs border rounded text-center outline-none focus:border-[#D4AF37]"
+                            value={zone.rate}
+                            onChange={(e) => setShippingZones(prev => prev.map(z => z.id === zone.id ? { ...z, rate: Number(e.target.value) } : z))}
+                          />
+                          <div className="text-[10px] font-bold text-neutral-400 mt-1">{currency}</div>
+                        </div>
+                        <button 
+                          onClick={() => setShippingZones(prev => prev.map(z => z.id === zone.id ? { ...z, isActive: !z.isActive } : z))}
+                          className={`w-10 h-5 rounded-full relative transition-all ${zone.isActive ? 'bg-[#D4AF37]' : 'bg-neutral-300'}`}
+                        >
+                          <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all ${zone.isActive ? (lang === 'ar' ? 'left-0.5' : 'right-0.5') : (lang === 'ar' ? 'right-0.5' : 'left-0.5')}`}></div>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'coupons' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in-up">
+            <div className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm h-fit">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Ticket className="text-[#D4AF37]" />
+                {lang === 'ar' ? 'إنشاء كوبون جديد' : 'Create New Coupon'}
+              </h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-neutral-400 block mb-1">{lang === 'ar' ? 'كود الكوبون' : 'Coupon Code'}</label>
+                  <input 
+                    type="text" 
+                    className="w-full p-3 bg-neutral-50 border rounded-xl outline-none focus:border-[#D4AF37] font-mono uppercase"
+                    value={newCoupon.code}
+                    onChange={e => setNewCoupon({...newCoupon, code: e.target.value.toUpperCase()})}
+                    placeholder="E.G. SUMMER20"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-bold text-neutral-400 block mb-1">{lang === 'ar' ? 'نوع الخصم' : 'Discount Type'}</label>
+                    <select 
+                      className="w-full p-3 bg-neutral-50 border rounded-xl outline-none focus:border-[#D4AF37]"
+                      value={newCoupon.discountType}
+                      onChange={e => setNewCoupon({...newCoupon, discountType: e.target.value as 'percentage' | 'fixed'})}
+                    >
+                      <option value="percentage">{lang === 'ar' ? 'نسبة مئوية' : 'Percentage'}</option>
+                      <option value="fixed">{lang === 'ar' ? 'مبلغ ثابت' : 'Fixed Amount'}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-neutral-400 block mb-1">{lang === 'ar' ? 'قيمة الخصم' : 'Value'}</label>
+                    <input 
+                      type="number" 
+                      className="w-full p-3 bg-neutral-50 border rounded-xl outline-none focus:border-[#D4AF37]"
+                      value={newCoupon.discountValue}
+                      onChange={e => setNewCoupon({...newCoupon, discountValue: Number(e.target.value)})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-neutral-400 block mb-1">{lang === 'ar' ? 'أقل قيمة للطلب' : 'Min Order Value'}</label>
+                  <input 
+                    type="number" 
+                    className="w-full p-3 bg-neutral-50 border rounded-xl outline-none focus:border-[#D4AF37]"
+                    value={newCoupon.minOrderValue}
+                    onChange={e => setNewCoupon({...newCoupon, minOrderValue: Number(e.target.value)})}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-neutral-400 block mb-1">{lang === 'ar' ? 'تاريخ الانتهاء' : 'Expiry Date'}</label>
+                  <input 
+                    type="date" 
+                    className="w-full p-3 bg-neutral-50 border rounded-xl outline-none focus:border-[#D4AF37]"
+                    value={newCoupon.expiryDate}
+                    onChange={e => setNewCoupon({...newCoupon, expiryDate: e.target.value})}
+                  />
+                </div>
+                <button 
+                  onClick={() => {
+                    if (!newCoupon.code || !newCoupon.discountValue) return;
+                    setCoupons(prev => [...prev, { ...newCoupon, id: Date.now().toString(), usageCount: 0 } as Coupon]);
+                    setNewCoupon({ code: '', discountType: 'percentage', discountValue: 0, minOrderValue: 0, expiryDate: '', usageLimit: 100, isActive: true });
+                  }}
+                  className="w-full py-4 bg-[#1a1a1a] text-[#D4AF37] rounded-xl font-bold hover:bg-black transition-all"
+                >
+                  {lang === 'ar' ? 'حفظ الكوبون' : 'Save Coupon'}
+                </button>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2 space-y-4">
+              <h3 className="text-xl font-bold mb-4">{lang === 'ar' ? 'الكوبونات النشطة' : 'Active Coupons'}</h3>
+              <div className="grid grid-cols-1 gap-4">
+                {coupons.map(coupon => (
+                  <div key={coupon.id} className="bg-white p-6 rounded-3xl border border-neutral-100 shadow-sm flex justify-between items-center group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center text-[#D4AF37]">
+                        <Ticket size={24} />
+                      </div>
+                      <div>
+                        <div className="font-mono font-bold text-lg">{coupon.code}</div>
+                        <div className="text-xs text-neutral-400">
+                          {coupon.discountType === 'percentage' ? `${coupon.discountValue}%` : `${coupon.discountValue} ${currency}`} {lang === 'ar' ? 'خصم' : 'Discount'}
+                          {' • '}
+                          {lang === 'ar' ? 'أقل طلب:' : 'Min:'} {coupon.minOrderValue} {currency}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-neutral-400 uppercase">{lang === 'ar' ? 'الاستخدام' : 'Usage'}</div>
+                        <div className="text-sm font-bold">{coupon.usageCount} / {coupon.usageLimit}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-bold text-neutral-400 uppercase">{lang === 'ar' ? 'ينتهي في' : 'Expires'}</div>
+                        <div className="text-sm font-bold text-red-500">{coupon.expiryDate}</div>
+                      </div>
+                      <button 
+                        onClick={() => setCoupons(prev => prev.filter(c => c.id !== coupon.id))}
+                        className="p-3 bg-red-50 text-red-500 rounded-xl opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                {coupons.length === 0 && (
+                  <div className="bg-white p-12 rounded-3xl border border-dashed border-neutral-200 text-center text-neutral-400">
+                    {lang === 'ar' ? 'لا توجد كوبونات حالياً' : 'No coupons available'}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'security' && (
+          <div className="space-y-8 animate-fade-in-up">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Admin Accounts */}
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <ShieldAlert className="text-[#D4AF37]" />
+                  {lang === 'ar' ? 'إدارة حسابات المسؤولين' : 'Admin Accounts'}
+                </h3>
+                <div className="space-y-4">
+                  {adminUsers.map(admin => (
+                    <div key={admin.id} className="flex justify-between items-center p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <div>
+                        <div className="font-bold text-sm">{admin.name}</div>
+                        <div className="text-[10px] text-neutral-400">{admin.email}</div>
+                        <div className="mt-1">
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                            admin.role === 'super_admin' ? 'bg-purple-100 text-purple-600' :
+                            admin.role === 'admin' ? 'bg-blue-100 text-blue-600' : 'bg-neutral-200 text-neutral-600'
+                          }`}>
+                            {admin.role}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="p-2 text-neutral-400 hover:text-[#D4AF37]"><Key size={16} /></button>
+                        {admin.role !== 'super_admin' && (
+                          <button 
+                            onClick={() => setAdminUsers(prev => prev.filter(a => a.id !== admin.id))}
+                            className="p-2 text-neutral-400 hover:text-red-500"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  <button 
+                    className="w-full py-3 border-2 border-dashed border-neutral-200 rounded-2xl text-neutral-400 font-bold text-sm hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus size={18} /> {lang === 'ar' ? 'إضافة مسؤول جديد' : 'Add New Admin'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Activity Logs */}
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <History className="text-[#D4AF37]" />
+                  {lang === 'ar' ? 'سجل النشاط' : 'Activity Logs'}
+                </h3>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {activityLogs.length === 0 ? (
+                    <div className="text-center py-10 text-neutral-400 text-sm italic">
+                      {lang === 'ar' ? 'لا توجد سجلات حالياً' : 'No logs available'}
+                    </div>
+                  ) : (
+                    activityLogs.map(log => (
+                      <div key={log.id} className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 text-xs">
+                        <div className="flex justify-between mb-1">
+                          <span className="font-bold text-neutral-700">{log.userName}</span>
+                          <span className="text-neutral-400">{log.timestamp}</span>
+                        </div>
+                        <div className="text-neutral-600">{log.action}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Backup & Security Settings */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Download className="text-[#D4AF37]" />
+                  {lang === 'ar' ? 'نسخ احتياطي للبيانات' : 'Data Backup'}
+                </h3>
+                <p className="text-sm text-neutral-500 mb-6">
+                  {lang === 'ar' ? 'قم بتصدير جميع بيانات المتجر (المنتجات، الطلبات، العملاء) في ملف واحد للنسخ الاحتياطي.' : 'Export all store data (products, orders, customers) in a single file for backup.'}
+                </p>
+                <button 
+                  onClick={() => {
+                    const data = { products, orders, customers, categories, storeSettings, adminUsers };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `morascent_backup_${new Date().toISOString().split('T')[0]}.json`;
+                    a.click();
+                  }}
+                  className="bg-[#1a1a1a] text-[#D4AF37] px-8 py-4 rounded-2xl font-bold flex items-center gap-3 hover:bg-black transition-all shadow-lg"
+                >
+                  <Download size={20} />
+                  {lang === 'ar' ? 'تصدير البيانات الآن' : 'Export Data Now'}
+                </button>
+              </div>
+
+              <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                  <Key className="text-[#D4AF37]" />
+                  {lang === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}
+                </h3>
+                <div className="space-y-4">
+                  <input type="password" placeholder={lang === 'ar' ? 'كلمة المرور الحالية' : 'Current Password'} className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none" />
+                  <input type="password" placeholder={lang === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'} className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none" />
+                  <button className="w-full py-4 bg-[#D4AF37] text-black rounded-2xl font-bold hover:bg-black hover:text-[#D4AF37] transition-all">
+                    {lang === 'ar' ? 'تحديث كلمة المرور' : 'Update Password'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="space-y-8 animate-fade-in-up">
+            <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+              <h3 className="text-xl font-bold mb-8 flex items-center gap-2">
+                <Settings className="text-[#D4AF37]" />
+                {lang === 'ar' ? 'إعدادات المتجر العامة' : 'General Store Settings'}
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <ShoppingBag size={16} /> {lang === 'ar' ? 'اسم المتجر' : 'Store Name'}
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.name}
+                    onChange={e => setStoreSettings({...storeSettings, name: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <ImageIcon size={16} /> {lang === 'ar' ? 'الشعار (نص أو رابط)' : 'Logo (Text or URL)'}
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.logo}
+                    onChange={e => setStoreSettings({...storeSettings, logo: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <Mail size={16} /> {lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                  </label>
+                  <input 
+                    type="email" 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.email}
+                    onChange={e => setStoreSettings({...storeSettings, email: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <MessageCircle size={16} /> {lang === 'ar' ? 'رقم الواتساب' : 'WhatsApp Number'}
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.whatsapp}
+                    onChange={e => setStoreSettings({...storeSettings, whatsapp: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <Banknote size={16} /> {lang === 'ar' ? 'العملة' : 'Currency'}
+                  </label>
+                  <input 
+                    type="text" 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.currency}
+                    onChange={e => setStoreSettings({...storeSettings, currency: e.target.value})}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <Globe size={16} /> {lang === 'ar' ? 'اللغة الافتراضية' : 'Default Language'}
+                  </label>
+                  <select 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.defaultLanguage}
+                    onChange={e => setStoreSettings({...storeSettings, defaultLanguage: e.target.value as 'ar' | 'en'})}
+                  >
+                    <option value="ar">العربية</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                    <Percent size={16} /> {lang === 'ar' ? 'نسبة الضريبة (%)' : 'Tax Percentage (%)'}
+                  </label>
+                  <input 
+                    type="number" 
+                    className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37]"
+                    value={storeSettings.taxPercentage}
+                    onChange={e => setStoreSettings({...storeSettings, taxPercentage: Number(e.target.value)})}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <label className="text-sm font-bold text-neutral-400 flex items-center gap-2">
+                  <Shield size={16} /> {lang === 'ar' ? 'سياسة المتجر' : 'Store Policy'}
+                </label>
+                <textarea 
+                  className="w-full p-4 bg-neutral-50 rounded-2xl border border-neutral-100 outline-none focus:border-[#D4AF37] h-32 resize-none"
+                  value={storeSettings.policy}
+                  onChange={e => setStoreSettings({...storeSettings, policy: e.target.value})}
+                />
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <Cpu className="text-[#D4AF37]" />
+                {lang === 'ar' ? 'تطوير المتجر بالذكاء الاصطناعي' : 'AI Store Development'}
+              </h3>
+              <div className="flex items-center justify-between p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                <div>
+                  <div className="font-bold text-lg">{lang === 'ar' ? 'تفعيل التطوير الذكي' : 'Enable AI Development'}</div>
+                  <div className="text-sm text-neutral-400">{lang === 'ar' ? 'السماح للذكاء الاصطناعي بتحسين الكود وتطوير ميزات جديدة تلقائياً' : 'Allow AI to optimize code and develop new features automatically'}</div>
+                </div>
+                <button 
+                  onClick={() => setStoreSettings({...storeSettings, aiDevelopmentEnabled: !storeSettings.aiDevelopmentEnabled})}
+                  className={`w-16 h-8 rounded-full relative transition-all duration-300 ${storeSettings.aiDevelopmentEnabled ? 'bg-[#D4AF37]' : 'bg-neutral-300'}`}
+                >
+                  <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 ${storeSettings.aiDevelopmentEnabled ? (lang === 'ar' ? 'left-1' : 'right-1') : (lang === 'ar' ? 'right-1' : 'left-1')}`}></div>
+                </button>
+              </div>
+              
+              {storeSettings.aiDevelopmentEnabled && (
+                <div className="mt-6 p-6 bg-emerald-50 rounded-2xl border border-emerald-100 flex items-center gap-4 animate-pulse">
+                  <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center">
+                    <Cpu size={20} />
+                  </div>
+                  <div className="text-sm text-emerald-800 font-bold">
+                    {lang === 'ar' ? 'الذكاء الاصطناعي متصل وجاهز لتلقي أوامر التطوير' : 'AI is connected and ready to receive development commands'}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white p-8 rounded-3xl border border-neutral-100 shadow-sm">
+              <h3 className="text-xl font-bold mb-6">{lang === 'ar' ? 'إعدادات إضافية' : 'Additional Settings'}</h3>
+              <div className="flex items-center justify-between p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                <div>
+                  <div className="font-bold text-lg">{lang === 'ar' ? 'نظام تقييمات العملاء' : 'Customer Review System'}</div>
+                  <div className="text-sm text-neutral-400">{lang === 'ar' ? 'تفعيل أو تعطيل قدرة العملاء على ترك تقييمات للمنتجات' : 'Enable or disable customers ability to leave product reviews'}</div>
+                </div>
+                <button 
+                  onClick={() => setIsReviewSystemActive(!isReviewSystemActive)}
+                  className={`w-16 h-8 rounded-full relative transition-all duration-300 ${isReviewSystemActive ? 'bg-[#D4AF37]' : 'bg-neutral-300'}`}
+                >
+                  <div className={`absolute top-1 w-6 h-6 bg-white rounded-full transition-all duration-300 ${isReviewSystemActive ? (lang === 'ar' ? 'left-1' : 'right-1') : (lang === 'ar' ? 'right-1' : 'left-1')}`}></div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {activeTab === 'stats' && (
           <div className="space-y-8 animate-fade-in-up">
@@ -200,6 +686,94 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, setOrders, prod
           </div>
         )}
 
+        {activeTab === 'customers' && (
+          <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden animate-fade-in-up">
+            <div className="p-8 border-b flex justify-between items-center">
+              <h3 className="text-xl font-bold">{lang === 'ar' ? 'قائمة العملاء' : 'Customer List'}</h3>
+              <div className="flex gap-4">
+                <div className="bg-neutral-50 px-4 py-2 rounded-xl border border-neutral-100 flex items-center gap-2">
+                  <CreditCard size={18} className="text-[#D4AF37]" />
+                  <span className="text-xs font-bold">{lang === 'ar' ? 'إجمالي المدفوعات' : 'Total Payments'}</span>
+                </div>
+                <div className="bg-neutral-50 px-4 py-2 rounded-xl border border-neutral-100 flex items-center gap-2">
+                  <RotateCcw size={18} className="text-red-500" />
+                  <span className="text-xs font-bold">{lang === 'ar' ? 'المرتجعات' : 'Returns'}</span>
+                </div>
+              </div>
+            </div>
+            <table className="w-full text-right">
+              <thead className="bg-neutral-50 text-neutral-400 text-xs font-bold uppercase">
+                <tr>
+                  <th className="px-6 py-4">{lang === 'ar' ? 'العميل' : 'Customer'}</th>
+                  <th className="px-6 py-4">{lang === 'ar' ? 'بيانات التواصل' : 'Contact'}</th>
+                  <th className="px-6 py-4">{lang === 'ar' ? 'الطلبات' : 'Orders'}</th>
+                  <th className="px-6 py-4">{lang === 'ar' ? 'إجمالي الإنفاق' : 'Total Spent'}</th>
+                  <th className="px-6 py-4">{lang === 'ar' ? 'ملاحظات' : 'Notes'}</th>
+                  <th className="px-6 py-4">{lang === 'ar' ? 'الإجراءات' : 'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {customers.map(c => (
+                  <tr key={c.id} className={`hover:bg-neutral-50 ${c.isBlocked ? 'opacity-50 grayscale' : ''}`}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400 font-bold">
+                          {c.name.charAt(0)}
+                        </div>
+                        <div>
+                          <div className="font-bold">{c.name}</div>
+                          <div className="text-[10px] text-neutral-400">ID: {c.id}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-bold">{c.phone}</div>
+                      <div className="text-[10px] text-neutral-400">{c.email || 'N/A'}</div>
+                    </td>
+                    <td className="px-6 py-4 font-bold">{c.orderCount}</td>
+                    <td className="px-6 py-4 font-bold text-[#D4AF37]">{c.totalSpent} {currency}</td>
+                    <td className="px-6 py-4">
+                      <input 
+                        type="text" 
+                        placeholder="..." 
+                        className="text-xs bg-transparent border-b border-transparent focus:border-[#D4AF37] outline-none w-full"
+                        value={c.notes}
+                        onChange={(e) => {
+                          const newNotes = e.target.value;
+                          setCustomers(prev => prev.map(cust => cust.id === c.id ? { ...cust, notes: newNotes } : cust));
+                        }}
+                      />
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            setCustomers(prev => prev.map(cust => cust.id === c.id ? { ...cust, isBlocked: !cust.isBlocked } : cust));
+                          }}
+                          className={`p-2 rounded-lg transition-all ${c.isBlocked ? 'bg-red-500 text-white' : 'bg-red-50 text-red-500 hover:bg-red-500 hover:text-white'}`}
+                          title={c.isBlocked ? (lang === 'ar' ? 'إلغاء الحظر' : 'Unblock') : (lang === 'ar' ? 'حظر' : 'Block')}
+                        >
+                          <Ban size={16} />
+                        </button>
+                        <button className="p-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all" title={lang === 'ar' ? 'الفواتير' : 'Invoices'}>
+                          <FileText size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {customers.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-20 text-center text-neutral-400">
+                      {lang === 'ar' ? 'لا يوجد عملاء بعد' : 'No customers yet'}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
         {activeTab === 'orders' && (
           <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
              <table className="w-full text-right">
@@ -214,8 +788,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, setOrders, prod
                 </thead>
                 <tbody className="divide-y">
                   {orders.map(o => (
-                    <tr key={o.id} className="hover:bg-neutral-50">
-                      <td className="px-6 py-4 font-mono font-bold text-xs">{o.id}</td>
+                    <tr key={o.id} className="hover:bg-neutral-50 cursor-pointer group" onClick={() => setSelectedOrder(o)}>
+                      <td className="px-6 py-4 font-mono font-bold text-xs group-hover:text-[#D4AF37]">{o.id}</td>
                       <td className="px-6 py-4 font-bold">{o.customer.name}</td>
                       <td className="px-6 py-4 font-bold text-[#D4AF37]">{o.total} {currency}</td>
                       <td className="px-6 py-4">
@@ -229,7 +803,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, setOrders, prod
                           {o.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                         <select 
                           className="text-xs border rounded-lg p-1 outline-none focus:border-[#D4AF37]"
                           value={o.status}
@@ -249,6 +823,116 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ orders, setOrders, prod
                   ))}
                 </tbody>
              </table>
+          </div>
+        )}
+
+        {/* Order Details Modal */}
+        {selectedOrder && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className="bg-white rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-fade-in-up">
+              <div className="p-6 bg-[#1a1a1a] text-white flex justify-between items-center">
+                <div>
+                  <h3 className="text-xl font-serif font-bold text-[#D4AF37]">{lang === 'ar' ? 'تفاصيل الطلب' : 'Order Details'}</h3>
+                  <p className="text-[10px] text-neutral-400 font-mono">{selectedOrder.id}</p>
+                </div>
+                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/10 rounded-full transition-all">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="p-8 max-h-[70vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b border-neutral-100">
+                  <div>
+                    <h4 className="text-xs font-bold text-neutral-400 uppercase mb-2">{lang === 'ar' ? 'بيانات العميل' : 'Customer Info'}</h4>
+                    <div className="font-bold text-lg">{selectedOrder.customer.name}</div>
+                    <div className="text-sm text-neutral-500">{selectedOrder.customer.phone}</div>
+                    <div className="text-sm text-neutral-500">{selectedOrder.customer.city}, {selectedOrder.customer.region}</div>
+                    
+                    {selectedOrder.status === 'تم الشحن' && (
+                      <div className="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                        <h5 className="text-[10px] font-bold text-blue-600 uppercase mb-1">{lang === 'ar' ? 'بيانات التتبع' : 'Tracking Info'}</h5>
+                        <div className="text-xs font-bold text-blue-800">{selectedOrder.shippingCompany} - {selectedOrder.trackingNumber}</div>
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <h4 className="text-xs font-bold text-neutral-400 uppercase mb-2">{lang === 'ar' ? 'ملخص الدفع' : 'Payment Summary'}</h4>
+                    <div className="text-sm font-bold">{selectedOrder.customer.paymentMethod === 'cod' ? (lang === 'ar' ? 'عند الاستلام' : 'Cash on Delivery') : 'InstaPay'}</div>
+                    <div className="text-2xl font-bold text-[#D4AF37] mt-2">{selectedOrder.total} {currency}</div>
+                    {selectedOrder.shippingCost && (
+                      <div className="text-xs text-neutral-400 mt-1">
+                        {lang === 'ar' ? 'شامل الشحن:' : 'Incl. Shipping:'} {selectedOrder.shippingCost} {currency}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {selectedOrder.status === 'قيد التجهيز' && (
+                  <div className="mb-8 p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                    <h4 className="text-xs font-bold text-neutral-400 uppercase mb-4">{lang === 'ar' ? 'تجهيز الشحنة' : 'Prepare Shipment'}</h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <select 
+                        className="p-3 border rounded-xl outline-none focus:border-[#D4AF37] bg-white text-sm"
+                        onChange={(e) => {
+                          const company = e.target.value;
+                          setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, shippingCompany: company } : o));
+                        }}
+                      >
+                        <option value="">{lang === 'ar' ? 'اختر شركة الشحن' : 'Select Company'}</option>
+                        {shippingCompanies.filter(c => c.isActive).map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                      </select>
+                      <input 
+                        type="text" 
+                        placeholder={lang === 'ar' ? 'رقم التتبع' : 'Tracking Number'}
+                        className="p-3 border rounded-xl outline-none focus:border-[#D4AF37] text-sm"
+                        onChange={(e) => {
+                          const track = e.target.value;
+                          setOrders(prev => prev.map(o => o.id === selectedOrder.id ? { ...o, trackingNumber: track } : o));
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <h4 className="text-xs font-bold text-neutral-400 uppercase mb-4">{lang === 'ar' ? 'المنتجات' : 'Products'}</h4>
+                <div className="space-y-4">
+                  {selectedOrder.items.map((item, idx) => (
+                    <div key={idx} className="flex justify-between items-center p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <div className="flex items-center gap-4">
+                        <img src={item.image} className="w-12 h-12 rounded-lg object-cover" />
+                        <div>
+                          <div className="font-bold text-sm">{lang === 'ar' ? item.name : item.nameEn}</div>
+                          <div className="text-[10px] text-neutral-400">{item.price} {currency} × {item.quantity}</div>
+                        </div>
+                      </div>
+                      <div className="font-bold text-neutral-900">
+                        {item.price * item.quantity} {currency}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedOrder.customer.notes && (
+                  <div className="mt-8 p-4 bg-yellow-50 rounded-2xl border border-yellow-100">
+                    <h4 className="text-[10px] font-bold text-yellow-600 uppercase mb-1">{lang === 'ar' ? 'ملاحظات العميل' : 'Customer Notes'}</h4>
+                    <p className="text-sm text-yellow-800 italic">{selectedOrder.customer.notes}</p>
+                  </div>
+                )}
+              </div>
+              <div className="p-6 bg-neutral-50 border-t border-neutral-100 flex justify-end gap-3">
+                <button 
+                  onClick={() => window.print()}
+                  className="px-6 py-3 bg-white border border-neutral-200 rounded-xl font-bold text-sm flex items-center gap-2 hover:bg-neutral-100 transition-all"
+                >
+                  <FileText size={18} /> {lang === 'ar' ? 'طباعة الفاتورة' : 'Print Invoice'}
+                </button>
+                <button 
+                  onClick={() => setSelectedOrder(null)}
+                  className="px-6 py-3 bg-[#1a1a1a] text-white rounded-xl font-bold text-sm hover:bg-black transition-all"
+                >
+                  {lang === 'ar' ? 'إغلاق' : 'Close'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

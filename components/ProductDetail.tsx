@@ -1,19 +1,47 @@
 
 import React, { useState } from 'react';
-import { X, ShoppingBag, ArrowRight, ArrowLeft, Star, ShieldCheck, Truck, Clock } from 'lucide-react';
-import { Product } from '../types';
+import { X, ShoppingBag, ArrowRight, ArrowLeft, Star, ShieldCheck, Truck, Clock, MessageSquare, Send, User as UserIcon } from 'lucide-react';
+import { Product, Review, User } from '../types';
 
 interface ProductDetailProps {
   product: Product;
   onClose: () => void;
   onAddToCart: (p: Product) => void;
   lang: 'ar' | 'en';
+  reviews: Review[];
+  onAddReview: (review: Omit<Review, 'id' | 'date'>) => void;
+  user: User | null;
+  isReviewSystemActive: boolean;
 }
 
-const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, onAddToCart, lang }) => {
+const ProductDetail: React.FC<ProductDetailProps> = ({ 
+  product, onClose, onAddToCart, lang, reviews, onAddReview, user, isReviewSystemActive 
+}) => {
   const [activeImage, setActiveImage] = useState(product.image);
+  const [newRating, setNewRating] = useState(5);
+  const [newComment, setNewComment] = useState("");
   const gallery = [product.image, ...(product.images || [])];
   const currency = lang === 'ar' ? 'ج.م' : 'EGP';
+
+  const handleReviewSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    if (!newComment.trim()) return;
+
+    onAddReview({
+      productId: product.id,
+      userName: user.name,
+      userEmail: user.email,
+      rating: newRating,
+      comment: newComment
+    });
+    setNewComment("");
+    setNewRating(5);
+  };
+
+  const avgRating = reviews.length > 0 
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+    : null;
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
@@ -57,9 +85,13 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, onAddTo
             <span className="bg-[#D4AF37]/10 text-[#D4AF37] text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
               {lang === 'ar' ? product.category : product.categoryEn}
             </span>
-            <div className="flex text-yellow-400">
-              {[1,2,3,4,5].map(i => <Star key={i} size={12} fill="currentColor" />)}
-            </div>
+            {isReviewSystemActive && avgRating && (
+              <div className="flex items-center gap-1 text-[#D4AF37]">
+                <Star size={12} fill="currentColor" />
+                <span className="text-xs font-bold">{avgRating}</span>
+                <span className="text-[10px] text-neutral-400">({reviews.length})</span>
+              </div>
+            )}
           </div>
 
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-neutral-900 mb-6 leading-tight">
@@ -111,6 +143,93 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, onClose, onAddTo
           <p className="mt-8 text-xs text-neutral-400 text-center">
             {lang === 'ar' ? 'تم اختيار هذا العطر بعناية ليمنحك تجربة فريدة' : 'Carefully selected to provide you with a unique olfactory experience'}
           </p>
+
+          {/* Reviews Section */}
+          {isReviewSystemActive && (
+            <div className="mt-12 pt-12 border-t border-neutral-100">
+              <h3 className="text-2xl font-serif font-bold mb-8 flex items-center gap-3">
+                <MessageSquare className="text-[#D4AF37]" />
+                {lang === 'ar' ? 'تقييمات العملاء' : 'Customer Reviews'}
+              </h3>
+
+              {/* Review Form */}
+              {user ? (
+                <form onSubmit={handleReviewSubmit} className="bg-neutral-50 p-6 rounded-3xl mb-10 border border-neutral-100">
+                  <div className="flex items-center gap-4 mb-4">
+                    <img src={user.picture} className="w-10 h-10 rounded-full border-2 border-[#D4AF37]" alt={user.name} />
+                    <div>
+                      <div className="font-bold text-sm">{user.name}</div>
+                      <div className="flex gap-1 mt-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setNewRating(star)}
+                            className={`transition-colors ${star <= newRating ? 'text-[#D4AF37]' : 'text-neutral-300'}`}
+                          >
+                            <Star size={16} fill={star <= newRating ? "currentColor" : "none"} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder={lang === 'ar' ? 'اكتب رأيك هنا...' : 'Write your review here...'}
+                      className="w-full p-4 bg-white border border-neutral-100 rounded-2xl outline-none focus:border-[#D4AF37] resize-none h-24 text-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute bottom-4 left-4 bg-[#1a1a1a] text-white p-2 rounded-xl hover:bg-[#D4AF37] hover:text-black transition-all"
+                    >
+                      <Send size={18} />
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="bg-neutral-50 p-6 rounded-3xl mb-10 border border-dashed border-neutral-200 text-center">
+                  <p className="text-sm text-neutral-500">
+                    {lang === 'ar' ? 'يرجى تسجيل الدخول لتتمكن من إضافة تقييم' : 'Please login to leave a review'}
+                  </p>
+                </div>
+              )}
+
+              {/* Reviews List */}
+              <div className="space-y-6">
+                {reviews.length === 0 ? (
+                  <p className="text-center text-neutral-400 text-sm py-10">
+                    {lang === 'ar' ? 'لا توجد تقييمات بعد. كن أول من يقيم!' : 'No reviews yet. Be the first to review!'}
+                  </p>
+                ) : (
+                  reviews.map((review) => (
+                    <div key={review.id} className="flex gap-4 p-4 bg-white rounded-2xl border border-neutral-50 shadow-sm">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-400">
+                          <UserIcon size={20} />
+                        </div>
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-start mb-1">
+                          <div className="font-bold text-sm">{review.userName}</div>
+                          <div className="text-[10px] text-neutral-400">{review.date}</div>
+                        </div>
+                        <div className="flex text-[#D4AF37] mb-2">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star key={star} size={10} fill={star <= review.rating ? "currentColor" : "none"} />
+                          ))}
+                        </div>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                          {review.comment}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

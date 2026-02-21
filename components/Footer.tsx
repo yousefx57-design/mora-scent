@@ -1,23 +1,23 @@
 
 import React from 'react';
 import { Mail, Instagram, Twitter, Facebook, Smartphone, Phone } from 'lucide-react';
+import { StoreSettings } from '../types';
 
 interface FooterProps {
   onAdminClick: () => void;
   lang: 'ar' | 'en';
+  storeSettings: StoreSettings;
 }
 
-const Footer: React.FC<FooterProps> = ({ onAdminClick, lang }) => {
+const Footer: React.FC<FooterProps> = ({ onAdminClick, lang, storeSettings }) => {
   return (
     <footer className="bg-white pt-20 pb-10 border-t border-neutral-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-1">
-            <h4 className="text-3xl font-serif font-bold text-[#D4AF37] mb-6">Mora scent</h4>
+            <h4 className="text-3xl font-serif font-bold text-[#D4AF37] mb-6">{storeSettings.name}</h4>
             <p className="text-neutral-500 text-sm leading-relaxed mb-8">
-              {lang === 'ar' 
-                ? 'وجهتكم الأولى في مصر للعطور الفاخرة والزيوت العطرية. نجمع بين الأناقة والجودة لنمنحكم تجربة عطرية فريدة.'
-                : 'Your premier destination in Egypt for luxury perfumes and essential oils. We combine elegance and quality for a unique experience.'}
+              {storeSettings.policy}
             </p>
             <div className="flex gap-4">
               <a href="#" className="w-10 h-10 rounded-full border flex items-center justify-center text-neutral-400 hover:bg-[#D4AF37] hover:text-black transition-all"><Instagram size={18} /></a>
@@ -41,12 +41,12 @@ const Footer: React.FC<FooterProps> = ({ onAdminClick, lang }) => {
                 <Phone size={18} className="text-[#D4AF37] mt-1" />
                 <div>
                   <div className="text-xs text-neutral-400 mb-1">خدمة العملاء</div>
-                  <div className="text-sm font-bold text-neutral-700">01550294614</div>
+                  <div className="text-sm font-bold text-neutral-700">{storeSettings.whatsapp}</div>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Mail size={18} className="text-[#D4AF37] mt-1" />
-                <div className="text-sm font-bold text-neutral-700">morascent1@gmail.com</div>
+                <div className="text-sm font-bold text-neutral-700">{storeSettings.email}</div>
               </div>
             </div>
           </div>
@@ -60,7 +60,7 @@ const Footer: React.FC<FooterProps> = ({ onAdminClick, lang }) => {
         </div>
         
         <div className="border-t border-neutral-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-neutral-400">
-          <p>&copy; {new Date().getFullYear()} متجر Mora scent. جميع الحقوق محفوظة.</p>
+          <p>&copy; {new Date().getFullYear()} {storeSettings.name}. جميع الحقوق محفوظة.</p>
           <div className="flex gap-6 items-center">
             <span className="flex items-center gap-1.5 bg-neutral-100 px-3 py-1 rounded-full text-neutral-700 font-bold">
                <Smartphone size={12} className="text-[#D4AF37]" /> InstaPay
